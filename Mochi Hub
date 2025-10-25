@@ -1,0 +1,222 @@
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ======= คีย์ 50 ตัว =======
+local validKeys = {}
+for i=1,50 do
+    table.insert(validKeys, ("MARU-%04d-ABCD"):format(i))
+end
+
+-- ======= ระบบคีย์ =======
+local function requestKey()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "KeyUI"
+    ScreenGui.Parent = CoreGui
+
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0,300,0,150)
+    Frame.Position = UDim2.new(0.5,-150,0.5,-75)
+    Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    Frame.Parent = ScreenGui
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,12)
+
+    local TextBox = Instance.new("TextBox")
+    TextBox.Size = UDim2.new(0,260,0,50)
+    TextBox.Position = UDim2.new(0,20,0,40)
+    TextBox.PlaceholderText = "ใส่คีย์ของคุณ"
+    TextBox.ClearTextOnFocus = false
+    TextBox.Parent = Frame
+    TextBox.TextColor3 = Color3.fromRGB(255,255,255)
+    TextBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0,8)
+
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0,260,0,40)
+    Button.Position = UDim2.new(0,20,0,100)
+    Button.Text = "ยืนยันคีย์"
+    Button.Parent = Frame
+    Button.BackgroundColor3 = Color3.fromRGB(0,100,255)
+    Button.TextColor3 = Color3.fromRGB(255,255,255)
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0,8)
+
+    local completed = false
+    Button.MouseButton1Click:Connect(function()
+        local key = TextBox.Text
+        if table.find(validKeys,key) then
+            completed = true
+            ScreenGui:Destroy()
+        else
+            TextBox.Text = ""
+            TextBox.PlaceholderText = "คีย์ไม่ถูกต้อง ลองใหม่!"
+        end
+    end)
+
+    repeat wait() until completed
+end
+
+requestKey()
+
+-- ======= สร้าง UI =======
+local function createUI()
+    if CoreGui:FindFirstChild("MochiHubUI") then
+        CoreGui.MochiHubUI:Destroy()
+    end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "MochiHubUI"
+    ScreenGui.Parent = CoreGui
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0,350,0,450)
+    MainFrame.Position = UDim2.new(0.5,-175,0.5,-225)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    MainFrame.Parent = ScreenGui
+    MainFrame.Visible = true
+    MainFrame.ClipsDescendants = true
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,12)
+
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Parent = MainFrame
+    TitleLabel.Size = UDim2.new(1,0,0,50)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.Text = "🔥 Mochi Hub 🔥"
+    TitleLabel.TextSize = 22
+    TitleLabel.TextColor3 = Color3.fromRGB(230,230,230)
+    TitleLabel.TextStrokeTransparency = 0
+    TitleLabel.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+
+    -- ===== ปุ่มเปิด/ปิด UI เคลื่อนที่ได้ =====
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0,60,0,60)
+    toggleButton.Position = UDim2.new(0,20,0.5,-30)
+    toggleButton.Text = "M"
+    toggleButton.Font = Enum.Font.GothamBlack
+    toggleButton.TextSize = 32
+    toggleButton.TextColor3 = Color3.fromRGB(255,255,255)
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    toggleButton.Parent = ScreenGui
+    toggleButton.AutoButtonColor = true
+    Instance.new("UICorner", toggleButton).CornerRadius = UDim.new(0,30)
+
+    -- Drag ปุ่ม M
+    local dragging, dragInput, dragStart, startPos
+    toggleButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = toggleButton.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    toggleButton.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UIS.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    toggleButton.MouseButton1Click:Connect(function()
+        MainFrame.Visible = not MainFrame.Visible
+    end)
+
+    -- ===== Frame สำหรับปุ่มฟังก์ชัน =====
+    local FunctionButtonsFrame = Instance.new("ScrollingFrame")
+    FunctionButtonsFrame.Parent = MainFrame
+    FunctionButtonsFrame.BackgroundTransparency = 1
+    FunctionButtonsFrame.Size = UDim2.new(1,-20,1,-60)
+    FunctionButtonsFrame.Position = UDim2.new(0,10,0,60)
+    FunctionButtonsFrame.ScrollBarThickness = 5
+    FunctionButtonsFrame.CanvasSize = UDim2.new(0,0,0,0)
+
+    -- ===== ฟังก์ชันทั้งหมด ภาษาไทย =====
+    local functionCategories = {
+        ["🏃 การเคลื่อนที่"] = {
+            ["🚀 บิน"] = "https://pastebin.com/raw/iUVERBrs",
+            ["🔥 วาป"] = "https://pastebin.com/raw/K5FYvtvN",
+            ["🦴 ทะลุกำแพง"] = "https://pastebin.com/raw/7Qab6kg9",
+            ["🏃 วิ่งเร็ว"] = "https://pastebin.com/raw/pZhkm5mD"
+        },
+        ["⚔️ การโจมตี"] = {
+            ["⚔️ ฆ่าบอท"] = "https://pastebin.com/raw/DczvQZyU",
+            ["🎯 ล็อคหัว"] = "https://gist.githubusercontent.com/Aimboter477387/582af6aec49782899d5d375ab239039e/raw"
+        },
+        ["🔧 เครื่องมือช่วยเล่น"] = {
+            ["🎁 เสกของ"] = "https://raw.githubusercontent.com/yofriendfromschool1/Sky-Hub-Backup/main/gametoolgiver.lua",
+            ["🔥 บูส FPS"] = "https://raw.githubusercontent.com/XNEOFF/FPS-BOOSTER/main/FPSBooster.txt",
+            ["🎩 Hitbox 32%"] = "https://pastebin.com/raw/iRyTtfmf",
+            ["💪🏻 อมตะ"] = "https://pastebin.com/raw/EjrTrMwC",
+            ["👾 คีย์บอร์ด"] = "https://raw.githubusercontent.com/Xxtan31/Ata/main/deltakeyboardcrack.txt",
+            ["👻 หายตัว"] = "https://pastebin.com/raw/3Rnd9rHf"
+        },
+        ["😈 ปั่นประสาทผู้เล่น"] = {
+            ["🌌 หลุมดำ"] = "https://pastebin.com/raw/pkZnU5P5",
+            ["🥴 ป่วนผู้เล่น"] = "https://pastefy.app/wa3v2Vgm/raw",
+            ["🤧 ดีดกระเด็น"] = "https://pastebin.com/raw/TXMNj1yy",
+            ["🌟 ดึงคน"] = "https://pastebin.com/raw/CuDBzSm6"
+        },
+        ["🔍 ESP & การมองเห็น"] = {
+            ["🔍 ESP ผู้เล่น"] = "https://pastebin.com/raw/ZkLhNuDL",
+            ["🤖 ESP บอท"] = "https://pastebin.com/raw/q26QuUBF"
+        }
+    }
+
+    local yOffset = 0
+    for category,scripts in pairs(functionCategories) do
+        local label = Instance.new("TextLabel")
+        label.Parent = FunctionButtonsFrame
+        label.BackgroundTransparency = 1
+        label.Size = UDim2.new(1,-20,0,25)
+        label.Position = UDim2.new(0,10,0,yOffset)
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 16
+        label.TextColor3 = Color3.fromRGB(180,180,50)
+        label.Text = category
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        yOffset += 30
+
+        for name,url in pairs(scripts) do
+            local btn = Instance.new("TextButton")
+            btn.Parent = FunctionButtonsFrame
+            btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+            btn.Size = UDim2.new(1,-20,0,35)
+            btn.Position = UDim2.new(0,10,0,yOffset)
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 14
+            btn.TextColor3 = Color3.fromRGB(255,255,255)
+            btn.Text = name -- แสดงชื่อจริง
+            btn.AutoButtonColor = false
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+            local stroke = Instance.new("UIStroke", btn)
+            stroke.Color = Color3.fromRGB(0,0,0)
+            stroke.Thickness = 1
+            stroke.Transparency = 0.5
+
+            btn.MouseButton1Click:Connect(function()
+                loadstring(game:HttpGet(url))()
+            end)
+
+            yOffset += 40
+        end
+    end
+
+    FunctionButtonsFrame.CanvasSize = UDim2.new(0,0,0,yOffset)
+end
+
+createUI()
